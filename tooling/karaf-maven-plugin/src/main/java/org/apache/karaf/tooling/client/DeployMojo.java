@@ -95,6 +95,9 @@ public class DeployMojo extends MojoSupport {
     @Parameter(defaultValue = "true")
     private boolean useProjectArtifact = true;
 
+    @Parameter(defaultValue = "false")
+    private boolean isFeatureArtifact = false;
+
     @Parameter
     List<String> artifactLocations;
 
@@ -108,6 +111,9 @@ public class DeployMojo extends MojoSupport {
         if (useProjectArtifact) {
             Artifact projectArtifact = project.getArtifact();
             artifacts.add("mvn:" + projectArtifact.getGroupId() + "/" + projectArtifact.getArtifactId() + "/" + projectArtifact.getVersion());
+        } else if(isFeatureArtifact) {
+            throw new MojoExecutionException("Feature artifact has to be the project artifact!\n" +
+                    "Set useProjectArtifact to true.");
         }
         artifacts.addAll(artifactLocations);
         if (useSsh)
@@ -196,7 +202,11 @@ public class DeployMojo extends MojoSupport {
             StringWriter writer = new StringWriter();
             PrintWriter print = new PrintWriter(writer, true);
             for (String location : locations) {
-                print.println("bundle:install -s " + location);
+                if(isFeatureArtifact) {
+                    print.println("feature:install -s " + location);
+                } else {
+                    print.println("bundle:install -s " + location);
+                }
             }
 
             final ClientChannel channel = session.createChannel("exec", writer.toString().concat(NEW_LINE));
